@@ -17,12 +17,16 @@ public class Player : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-//		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(Input.GetAxis("
 		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
 	}
 
 	void FixedUpdate() {
 		float horizForce = Input.GetAxis("Horizontal");
-		rigidBody.AddForce (Vector2.right * speed * horizForce);
-	}
+		rigidBody.AddForce (Vector2.right * speed * horizForce);     
+
+        if (Input.GetKeyDown("space")) {
+            Vector3 up = transform.TransformDirection(Vector3.up);
+            rigidBody.AddForce(up * 5, ForceMode2D.Impulse);
+        }
+    }
 }
