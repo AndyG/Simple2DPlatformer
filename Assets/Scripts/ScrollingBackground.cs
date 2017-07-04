@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class ScrollingBackground : MonoBehaviour {
 
+    public float parallaxCoefficient;
+
     private float backgroundSize;
 
     private Transform cameraTransform;
@@ -14,9 +16,12 @@ public class ScrollingBackground : MonoBehaviour {
     private int leftIndex;
     private int rightIndex;
 
+    private float lastCameraX;
+
     // Use this for initialization
     void Start() {
         cameraTransform = Camera.main.transform;
+        lastCameraX = cameraTransform.position.x;
         layers = new Transform[transform.childCount];
 
         for (int i = 0; i < transform.childCount; i++)
@@ -35,25 +40,35 @@ public class ScrollingBackground : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-        float cameraPosX = cameraTransform.position.x;
+        float deltaX = cameraTransform.position.x - lastCameraX;
+
+        transform.position += Vector3.right * (deltaX * parallaxCoefficient);
+        
         float leftThreshold = layers[leftIndex].transform.position.x - viewZone;
         float rightThreshold = layers[rightIndex].transform.position.x + viewZone;
 
-        if (cameraPosX < leftThreshold)
+        if (lastCameraX < leftThreshold)
         {
             ScrollLeft();
-        } else if (cameraPosX > rightThreshold)
+        } else if (lastCameraX > rightThreshold)
         {
             ScrollRight();
         } else
         {
             //Debug.Log("didn't scroll. cameraPosX: " + cameraPosX + " -- thresholds: " + leftThreshold + ", " + rightThreshold);
         }
+
+        lastCameraX = cameraTransform.position.x;
     }
 
     private void ScrollLeft()
     {
-        layers[rightIndex].position = Vector3.right * (layers[leftIndex].position.x - backgroundSize);
+        Vector3 newPosition = new Vector3(
+            layers[leftIndex].position.x - backgroundSize,
+            layers[rightIndex].position.y,
+            layers[rightIndex].position.z);
+
+        layers[rightIndex].position = newPosition;
         leftIndex = rightIndex;
         rightIndex--;
 
@@ -65,8 +80,13 @@ public class ScrollingBackground : MonoBehaviour {
 
     private void ScrollRight()
     {
-        layers[leftIndex].position = Vector3.right * (layers[rightIndex].position.x + backgroundSize);
-        Debug.Log("moved to position: " + layers[leftIndex].position.x);
+        Vector3 newPosition = new Vector3(
+            layers[rightIndex].position.x + backgroundSize,
+            layers[leftIndex].position.y,
+            layers[leftIndex].position.z);
+
+        layers[leftIndex].position = newPosition;
+
         rightIndex = leftIndex;
         leftIndex++;
 
