@@ -9,7 +9,7 @@ public class Track : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-		target = GameObject.Find("Player");
+	//	target = GameObject.Find("Player");
 	}
 	
 	// Update is called once per frame
