@@ -12,6 +12,7 @@ public class Player : MonoBehaviour {
 
 	private Rigidbody2D rigidBody;
 	private Animator animator;
+    private SpriteRenderer spriteRenderer;
 
     private DashState dashState;
     private float timeSinceDashStart;
@@ -20,12 +21,24 @@ public class Player : MonoBehaviour {
 	void Start () {
 		rigidBody = gameObject.GetComponent<Rigidbody2D> ();
 		animator = gameObject.GetComponent<Animator> ();
+        spriteRenderer = gameObject.GetComponent<SpriteRenderer>();
 	}
 	
 	// Update is called once per frame
 	void Update () {
 		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
         animator.SetBool("Player_Grounded", grounded);
+        animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
+
+        if (rigidBody.velocity.x < 0)
+        {
+            //transform.localRotation = Quaternion.Euler(0, 180, 0);
+            spriteRenderer.flipX = true;
+        } else
+        {
+            //transform.localRotation = Quaternion.Euler(0, 0, 0);
+            spriteRenderer.flipX = false;
+        }
 
         switch (dashState)
         {

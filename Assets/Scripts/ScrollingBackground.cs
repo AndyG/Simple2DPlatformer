@@ -17,6 +17,7 @@ public class ScrollingBackground : MonoBehaviour {
     private int rightIndex;
 
     private float lastCameraX;
+    private float lastCameraY;
 
     // Use this for initialization
     void Start() {
@@ -41,9 +42,11 @@ public class ScrollingBackground : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
         float deltaX = cameraTransform.position.x - lastCameraX;
+        float deltaY = cameraTransform.position.y - lastCameraY;
 
         transform.position += Vector3.right * (deltaX * parallaxCoefficient);
-        
+        transform.position += Vector3.down * (deltaY * parallaxCoefficient);
+
         float leftThreshold = layers[leftIndex].transform.position.x - viewZone;
         float rightThreshold = layers[rightIndex].transform.position.x + viewZone;
 
@@ -59,6 +62,7 @@ public class ScrollingBackground : MonoBehaviour {
         }
 
         lastCameraX = cameraTransform.position.x;
+        lastCameraY = cameraTransform.position.y;
     }
 
     private void ScrollLeft()
