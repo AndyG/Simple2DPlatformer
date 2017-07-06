@@ -18,7 +18,7 @@ public class GroundCheckHead : MonoBehaviour {
 	private void OnTriggerEnter2D(Collider2D other)
 	{
 		if (other.gameObject.CompareTag("HeadKiller")) {
-			SceneManager.LoadScene ("FirstScene");
-		}
-	}
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
+    }
 }
