@@ -8,11 +8,12 @@ public class Player : MonoBehaviour {
 	public bool infiniteAcceleration = true;
 	public float topSpeedX = 50f;
     public float dashSpeed = 150f;
-    public bool grounded = true;
+    private bool grounded = true;
 	public float maxDashTime = 30f;
     public float jumpPower = 10f;
 
-	public float minJumpMomentum = 3f;
+	public float minJumpMomentum = 4f;
+    public float postDashVelocityY = -5f;
 
 	private Rigidbody2D rigidBody;
 	private Animator animator;
@@ -20,17 +21,13 @@ public class Player : MonoBehaviour {
     private DashState dashState;
     private float timeSinceDashStart;
 
-	/**
-	 * Tracks whether a jump was the cause of the player's airborne state
-	 * which is useful for determining whether releasing the jump button 
-	 * should cut short the player's vertical momentum.
-	 * */
-
-	private bool airborneFromJump = false;
+    private float intrinsicGravity;
 
 	// Use this for initialization
 	void Start () {
 		rigidBody = gameObject.GetComponent<Rigidbody2D> ();
+        intrinsicGravity = rigidBody.gravityScale;
+
 		animator = gameObject.GetComponent<Animator> ();
 	}
 	
@@ -49,76 +46,91 @@ public class Player : MonoBehaviour {
 
         switch (dashState) {
 			case DashState.READY:
+                rigidBody.gravityScale = intrinsicGravity;
 				var isDashKeyDown = Input.GetKeyDown (KeyCode.RightShift);
 				if (isDashKeyDown) {
 					performDash ();
 				} else {
 					applyRun ();
-					capVelocityX ();
 				}
 				break;
             case DashState.DASHING:
+                rigidBody.gravityScale = 0f;
                 timeSinceDashStart += Time.deltaTime * 60;
-                if (timeSinceDashStart > maxDashTime)
-                {
+                if (timeSinceDashStart > maxDashTime) {
                     dashState = DashState.READY;
-					applyRun ();
+                    setVelocity(0, postDashVelocityY);
+                    applyRun ();
                 }
                 break;
 		}
 
-		truncateJump ();
+        processJump();
 	}
-
-	void FixedUpdate() {
-        if (Input.GetKeyDown("space") && grounded) {
-            Vector3 up = transform.TransformDirection(Vector3.up);
-            rigidBody.AddForce(up * jumpPower, ForceMode2D.Impulse);
-			airborneFromJump = true;
-        }
-    }
 
     private void performDash() {
-        var directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
         dashState = DashState.DASHING;
-		rigidBody.velocity = Vector2.right * dashSpeed * directionMultiplier;
+        var directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
+		setVelocity(dashSpeed * directionMultiplier, 0);
         timeSinceDashStart = 0;
 	}
-
-	private void capVelocityX() {
-		float currentHorizVelocity = rigidBody.velocity.x;
-		if (Mathf.Abs(currentHorizVelocity) > topSpeedX) {
-			int multiplier = currentHorizVelocity > 0 ? 1 : -1;
-			rigidBody.velocity = new Vector2(topSpeedX * multiplier, rigidBody.velocity.y);
-			Debug.Log("capping velocity");
-		}
-	}
-
+	
 	private void applyRun() {
 		float horizInput = Input.GetAxis ("Horizontal");
-		float currentHorizVelocity = rigidBody.velocity.x;
 
 		if (horizInput != 0) {
 			float force = (horizInput) * (infiniteAcceleration ? float.MaxValue : acceleration);
 			rigidBody.AddForce (Vector2.right * force, ForceMode2D.Impulse);
-		} else {
-			rigidBody.velocity = new Vector2 (0, rigidBody.velocity.y);
+            capVelocityX();
+        } else {
+            setVelocityX(0);
 		}
-	}
+    }
+
+    private void capVelocityX() {
+        float currentHorizVelocity = rigidBody.velocity.x;
+        if (Mathf.Abs(currentHorizVelocity) > topSpeedX)
+        {
+            int multiplier = currentHorizVelocity > 0 ? 1 : -1;
+            setVelocityX(topSpeedX * multiplier);
+        }
+    }
+
+    private void processJump() {
+        if (Input.GetKeyDown("space") && grounded)
+        {
+            Vector3 up = transform.TransformDirection(Vector3.up);
+            rigidBody.AddForce(up * jumpPower, ForceMode2D.Impulse);
+        }
+
+        if (!grounded)
+        {
+            truncateJump();
+        }
+    }
 
 	private void truncateJump() {
-		if (!airborneFromJump) {
-			return;
-		}
-
-		if (!Input.GetKeyDown ("space")) {
-
+		if (Input.GetKeyUp ("space") && rigidBody.velocity.y > minJumpMomentum) {
+            setVelocityY(minJumpMomentum);
 		}
 	}
+
+    private void setVelocityX(float x) {
+        setVelocity(x, rigidBody.velocity.y);
+    }
+
+    private void setVelocityY(float y)
+    {
+        setVelocity(rigidBody.velocity.x, y);
+    }
+
+    private void setVelocity(float x, float y)
+    {
+        rigidBody.velocity = new Vector2(x, y);
+    }
 
 	public void setGrounded(bool isGrounded) {
 		grounded = isGrounded;
-		airborneFromJump = !grounded && airborneFromJump;
 	}
 
     public enum DashState {
