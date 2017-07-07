@@ -11,15 +11,17 @@ public class Player : MonoBehaviour {
     private bool grounded = true;
 	public float maxDashTime = 30f;
     public float jumpPower = 10f;
-
 	public float minJumpMomentum = 4f;
     public float postDashVelocityY = -5f;
+    public int maxAirdashesPerAirborne = 1;
 
 	private Rigidbody2D rigidBody;
 	private Animator animator;
 
     private DashState dashState;
     private float timeSinceDashStart;
+
+    private int airdashesSinceAirborne = 0;
 
     private float intrinsicGravity;
 
@@ -38,29 +40,21 @@ public class Player : MonoBehaviour {
         animator.SetBool("Player_Grounded", grounded);
         animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
 
-		if (rigidBody.velocity.x < 0) {
-			transform.localScale = new Vector3(-1, transform.localScale.y, transform.localScale.z);
-		} else {
-			transform.localScale = new Vector3(1, transform.localScale.y, transform.localScale.z);
-		}
-
+        flipSpriteIfGoingLeft();
+		
         switch (dashState) {
 			case DashState.READY:
                 rigidBody.gravityScale = intrinsicGravity;
-				var isDashKeyDown = Input.GetKeyDown (KeyCode.RightShift);
-				if (isDashKeyDown) {
-					performDash ();
-				} else {
-					applyRun ();
+				if (!performDash()) {
+                    performHorizMove();
 				}
 				break;
             case DashState.DASHING:
-                rigidBody.gravityScale = 0f;
                 timeSinceDashStart += Time.deltaTime * 60;
                 if (timeSinceDashStart > maxDashTime) {
                     dashState = DashState.READY;
                     setVelocity(0, postDashVelocityY);
-                    applyRun ();
+                    performHorizMove();
                 }
                 break;
 		}
@@ -68,14 +62,35 @@ public class Player : MonoBehaviour {
         processJump();
 	}
 
-    private void performDash() {
-        dashState = DashState.DASHING;
-        var directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
-		setVelocity(dashSpeed * directionMultiplier, 0);
-        timeSinceDashStart = 0;
+    public void setGrounded(bool isGrounded) {
+        grounded = isGrounded;
+        airdashesSinceAirborne = 0;
+    }
+
+    // Returns true if a dash was performed.
+    private bool performDash() {
+        if (!grounded && airdashesSinceAirborne >= maxAirdashesPerAirborne) {
+            return false;
+        }
+
+        bool isDashKeyDown = Input.GetKeyDown(KeyCode.RightShift);
+        if (isDashKeyDown) {
+            dashState = DashState.DASHING;
+            rigidBody.gravityScale = 0f;
+            var directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
+            setVelocity(dashSpeed * directionMultiplier, 0);
+            timeSinceDashStart = 0;
+
+            if (!grounded) {
+                airdashesSinceAirborne++;
+            }
+            return true;
+        }
+
+        return false;
 	}
 	
-	private void applyRun() {
+	private void performHorizMove() {
 		float horizInput = Input.GetAxis ("Horizontal");
 
 		if (horizInput != 0) {
@@ -101,20 +116,27 @@ public class Player : MonoBehaviour {
         {
             Vector3 up = transform.TransformDirection(Vector3.up);
             rigidBody.AddForce(up * jumpPower, ForceMode2D.Impulse);
+            dashState = DashState.READY;
         }
 
-        if (!grounded)
-        {
-            truncateJump();
-        }
+        tryShortenJump();
+
     }
 
-	private void truncateJump() {
+	private void tryShortenJump() {
 		if (Input.GetKeyUp ("space") && rigidBody.velocity.y > minJumpMomentum) {
             setVelocityY(minJumpMomentum);
 		}
 	}
 
+    private void flipSpriteIfGoingLeft() {
+        int scaleX = rigidBody.velocity.x < 0 ? -1 : 1;
+        transform.localScale = new Vector3(scaleX, transform.localScale.y, transform.localScale.z);
+    }
+
+    /**
+     * Various helper methods for updating position or velocity. 
+     */
     private void setVelocityX(float x) {
         setVelocity(x, rigidBody.velocity.y);
     }
@@ -129,11 +151,7 @@ public class Player : MonoBehaviour {
         rigidBody.velocity = new Vector2(x, y);
     }
 
-	public void setGrounded(bool isGrounded) {
-		grounded = isGrounded;
-	}
-
-    public enum DashState {
+    private enum DashState {
         READY,
         DASHING
     }
