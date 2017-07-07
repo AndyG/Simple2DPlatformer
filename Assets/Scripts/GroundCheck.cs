@@ -35,7 +35,7 @@ public class GroundCheck : MonoBehaviour {
     {
         if (player != null)
         {
-            player.grounded = isGrounded;
+			player.setGrounded (isGrounded);
         }
     }
 }
