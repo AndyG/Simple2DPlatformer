@@ -14,6 +14,7 @@ public class Player : MonoBehaviour {
 	public float minJumpMomentum = 4f;
     public float postDashVelocityY = -5f;
     public int maxAirdashesPerAirborne = 1;
+	public float jumpLeniency = 60f;
 
 	private Rigidbody2D rigidBody;
 	private Animator animator;
@@ -22,6 +23,8 @@ public class Player : MonoBehaviour {
     private float timeSinceDashStart;
 
     private int airdashesSinceAirborne = 0;
+
+	private float timeSinceGrounded = 0f;
 
     private float intrinsicGravity;
 
@@ -57,6 +60,13 @@ public class Player : MonoBehaviour {
                     performHorizMove();
                 }
                 break;
+		}
+
+		if (grounded) {
+			timeSinceGrounded = 0f;
+		} else {
+			timeSinceGrounded += Time.deltaTime;
+			Debug.Log ("timeSinceGrounded: " + timeSinceGrounded);
 		}
 
         processJump();
@@ -112,7 +122,9 @@ public class Player : MonoBehaviour {
     }
 
     private void processJump() {
-        if (Input.GetKeyDown("space") && grounded)
+		bool canJump = grounded || (timeSinceGrounded < jumpLeniency);
+
+		if (Input.GetKeyDown("space") && canJump)
         {
             Vector3 up = transform.TransformDirection(Vector3.up);
             rigidBody.AddForce(up * jumpPower, ForceMode2D.Impulse);
