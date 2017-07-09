@@ -2,20 +2,38 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Track : MonoBehaviour {
+public class Track : MonoBehaviour
+{
 
-	public GameObject target;
-	public float distance = 15;
+    public GameObject target;
+    public float distance = 15;
+    public float lerpFactor = 0.1f;
 
-	// Use this for initialization
-	void Start () {
-	//	target = GameObject.Find("Player");
-	}
-	
-	// Update is called once per frame
-	void Update () {
-		Vector3 playerInfo = target.transform.transform.position;
+    public bool isSmooth = true;
 
-		transform.position = new Vector3(playerInfo.x, playerInfo.y, playerInfo.z - distance);
-	}
+    // Use this for initialization
+    void Start() { }
+
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (!isSmooth)
+        {
+            transform.position = computeTargetPosition();
+        }
+    }
+
+    void FixedUpdate()
+    {
+        if (isSmooth)
+        {
+            transform.position = Vector3.Lerp(transform.position, computeTargetPosition(), lerpFactor);
+        }
+    }
+
+    private Vector3 computeTargetPosition()
+    {
+        return target.transform.position + (Vector3.back * distance);
+    }
 }
