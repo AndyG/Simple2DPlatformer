@@ -34,9 +34,6 @@ public class ScrollingBackground : MonoBehaviour {
         rightIndex = layers.Length - 1;
 
         backgroundSize = layers[0].transform.GetComponent<Renderer>().bounds.size.x;
-
-        Debug.Log("computed backgroundSize: " + backgroundSize);
-        Debug.Log("computed xpositions: " + layers[0].transform.position.x + " -- " + layers[1].transform.position.x + " -- " + layers[2].transform.position.x);
 	}
 	
 	// Update is called once per frame
@@ -56,9 +53,6 @@ public class ScrollingBackground : MonoBehaviour {
         } else if (lastCameraX > rightThreshold)
         {
             ScrollRight();
-        } else
-        {
-            //Debug.Log("didn't scroll. cameraPosX: " + cameraPosX + " -- thresholds: " + leftThreshold + ", " + rightThreshold);
         }
 
         lastCameraX = cameraTransform.position.x;
