@@ -18,9 +18,10 @@ public class Player : MonoBehaviour {
 
 	private Rigidbody2D rigidBody;
 	private Animator animator;
-    private Collider2D mainCollider;
 
     private SpriteFlipper spriteFlipper;
+    private GroundChecker groundChecker;
+    private WallPushChecker wallPushChecker;
 
     private DashState dashState;
     private WallPushState wallPushState;
@@ -34,7 +35,6 @@ public class Player : MonoBehaviour {
     private float intrinsicGravity;
     private int environmentLayerMask;
 
-	// Use this for initialization
 	void Start () {
 		rigidBody = gameObject.GetComponent<Rigidbody2D> ();
         intrinsicGravity = rigidBody.gravityScale;
@@ -42,24 +42,28 @@ public class Player : MonoBehaviour {
 		animator = gameObject.GetComponent<Animator> ();
         environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
 
-        mainCollider = gameObject.GetComponent<Collider2D>();
-
         spriteFlipper = new SpriteFlipper(transform);
+        groundChecker = new GroundCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
+        wallPushChecker = new WallPushCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
     }
 	
-	// Update is called once per frame
 	void Update () {
 
-        checkGrounded();
-        checkPushingWall();
+        grounded = groundChecker.isGrounded();
+        wallPushState = wallPushChecker.getWallPushState();
+
+		if (grounded) {
+			timeSinceGrounded = 0f;
+            airdashesSinceAirborne = 0;
+		} else {
+			timeSinceGrounded += Time.deltaTime;
+		}
 
 		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
         animator.SetBool("Player_Grounded", grounded);
         animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
         animator.SetBool("Player_Pushing_Wall", (grounded && (wallPushState != WallPushState.NONE)));
 
-        flipSpriteIfGoingLeft();
-		
         switch (dashState) {
 			case DashState.READY:
                 rigidBody.gravityScale = intrinsicGravity;
@@ -78,70 +82,8 @@ public class Player : MonoBehaviour {
 		}
 
         processJump();
+        flipSpriteIfGoingLeft();
 	}
-
-    private void checkGrounded()
-    {
-		if (RayUtils.doAnyRaysCollide(getGroundRays(), groundDetectionDistance, environmentLayerMask)) {
-            grounded = true;
-			timeSinceGrounded = 0f;
-            airdashesSinceAirborne = 0;
-		} else {
-            grounded = false;
-			timeSinceGrounded += Time.deltaTime;
-		}
-    }
-
-    private void checkPushingWall() {
-        float horizInput = Input.GetAxis("Horizontal");
-
-        if (horizInput == 0) {
-            wallPushState = WallPushState.NONE;
-            return;
-        }
-
-        bool goingRight = horizInput > 0;
-        Ray2D[] rays = goingRight ? getWallRaysRight() : getWallRaysLeft();
-        if (RayUtils.doAnyRaysCollide(rays, groundDetectionDistance, environmentLayerMask)) {
-            wallPushState = goingRight ? WallPushState.PUSHING_RIGHT: WallPushState.PUSHING_LEFT;
-        } else {
-            wallPushState = WallPushState.NONE;
-        }
-    }
-
-    private Ray2D[] getWallRaysLeft()
-    {
-        float colliderWidth = mainCollider.bounds.size.x;
-        Vector2 colliderMiddleLeft = transform.position + (Vector3.left * colliderWidth / 2);
-
-        Ray2D[] rays = new Ray2D[1];
-        rays[0] = new Ray2D(colliderMiddleLeft, Vector3.left);
-        return rays;
-    }
-
-    private Ray2D[] getWallRaysRight()
-    {
-        float colliderWidth = mainCollider.bounds.size.x;
-        Vector2 colliderMiddleRight = transform.position + (Vector3.right * colliderWidth / 2);
-
-        Ray2D[] rays = new Ray2D[1];
-        rays[0] = new Ray2D(colliderMiddleRight, Vector3.right);
-        return rays;
-    }
-
-    private Ray2D[] getGroundRays()
-    {
-        float colliderWidth = mainCollider.bounds.size.x * .9f;
-        float colliderHeight = mainCollider.bounds.size.y;
-
-        Vector2 colliderBottomLeft = transform.position + new Vector3(-colliderWidth / 2, -colliderHeight / 2);
-        Vector2 colliderBottomRight = transform.position + new Vector3(colliderWidth / 2, -colliderHeight / 2);
-
-        Ray2D[] rays = new Ray2D[2];
-        rays[0] = new Ray2D(colliderBottomLeft, Vector3.down);
-        rays[1] = new Ray2D(colliderBottomRight, Vector3.down);
-        return rays;
-    }
 
     // Returns true if a dash was performed.
     private bool performDash() {
@@ -206,7 +148,6 @@ public class Player : MonoBehaviour {
         }
 
         tryShortenJump();
-
     }
 
 	private void tryShortenJump() {
@@ -239,11 +180,5 @@ public class Player : MonoBehaviour {
     private enum DashState {
         READY,
         DASHING
-    }
-    
-    private enum WallPushState {
-        PUSHING_LEFT,
-        PUSHING_RIGHT,
-        NONE
     }
 }
