@@ -25,7 +25,6 @@ public class WallPushCheckerRays : WallPushChecker {
         }
 
         bool goingRight = horizInput > 0;
-        Ray2D[] rays = goingRight ? getWallRaysRight() : getWallRaysRight();
         if (goingRight && RayUtils.doAnyRaysCollide(getWallRaysRight(), groundDistance, layerMask))
         {
             return WallPushState.PUSHING_RIGHT;
@@ -50,7 +49,7 @@ public class WallPushCheckerRays : WallPushChecker {
 
     private Ray2D[] getWallRaysRight()
     {
-       float colliderWidth = boundsProvider.bounds.size.x;
+        float colliderWidth = boundsProvider.bounds.size.x;
         Vector2 colliderMiddleRight = target.position + (Vector3.right * colliderWidth / 2);
 
         Ray2D[] rays = new Ray2D[1];

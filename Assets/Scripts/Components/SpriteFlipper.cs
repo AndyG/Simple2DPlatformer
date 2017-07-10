@@ -2,15 +2,17 @@
 
 public class SpriteFlipper {
 
-    private Transform transform;
+    public delegate bool ShouldFlip();
 
-    public SpriteFlipper(Transform transform)
-    {
-        this.transform = transform;
+    private ShouldFlip shouldFlip;
+
+
+    public SpriteFlipper(ShouldFlip shouldFlip) {
+        this.shouldFlip = shouldFlip;
     }
     
-    public void flipSprite(bool flip) {
-        int scaleX = flip ? -1 : 1;
+    public void tryFlipSprite(Transform transform) {
+        int scaleX = shouldFlip() ? -1 : 1;
         transform.localScale = new Vector3(scaleX, transform.localScale.y, transform.localScale.z);
     }
 }

@@ -42,13 +42,15 @@ public class Player : MonoBehaviour {
 		animator = gameObject.GetComponent<Animator> ();
         environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
 
-        spriteFlipper = new SpriteFlipper(transform);
+        spriteFlipper = new SpriteFlipper(delegate() {
+            return rigidBody.velocity.x < 0 || wallPushState == WallPushState.PUSHING_LEFT;
+        });
+
         groundChecker = new GroundCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
         wallPushChecker = new WallPushCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
     }
-	
-	void Update () {
 
+	void Update () {
         grounded = groundChecker.isGrounded();
         wallPushState = wallPushChecker.getWallPushState();
 
@@ -58,11 +60,6 @@ public class Player : MonoBehaviour {
 		} else {
 			timeSinceGrounded += Time.deltaTime;
 		}
-
-		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
-        animator.SetBool("Player_Grounded", grounded);
-        animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
-        animator.SetBool("Player_Pushing_Wall", (grounded && (wallPushState != WallPushState.NONE)));
 
         switch (dashState) {
 			case DashState.READY:
@@ -82,7 +79,8 @@ public class Player : MonoBehaviour {
 		}
 
         processJump();
-        flipSpriteIfGoingLeft();
+        updateAnimator();
+        spriteFlipper.tryFlipSprite(transform);
 	}
 
     // Returns true if a dash was performed.
@@ -95,13 +93,15 @@ public class Player : MonoBehaviour {
         if (isDashKeyDown) {
             dashState = DashState.DASHING;
             rigidBody.gravityScale = 0f;
-            var directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
+
+            int directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
             setVelocity(dashSpeed * directionMultiplier, 0);
             timeSinceDashStart = 0;
 
             if (!grounded) {
                 airdashesSinceAirborne++;
             }
+
             return true;
         }
 
@@ -109,23 +109,20 @@ public class Player : MonoBehaviour {
 	}
 	
 	private void performHorizMove() {
+        if (wallPushState != WallPushState.NONE) {
+            return;
+        }
+
 		float horizInput = Input.GetAxis ("Horizontal");
 
-        if (wallPushState == WallPushState.PUSHING_LEFT && horizInput < 0) {
-            return;
-        }
-         
-        if (wallPushState == WallPushState.PUSHING_RIGHT && horizInput > 0) {
+        if (horizInput == 0) {
+            setVelocityX(0);
             return;
         }
 
-		if (horizInput != 0) {
-			float force = (horizInput) * (infiniteAcceleration ? float.MaxValue : acceleration);
-			rigidBody.AddForce (Vector2.right * force, ForceMode2D.Impulse);
-            capVelocityX();
-        } else {
-            setVelocityX(0);
-		}
+        float force = (horizInput) * (infiniteAcceleration ? float.MaxValue : acceleration);
+        rigidBody.AddForce (Vector2.right * force, ForceMode2D.Impulse);
+        capVelocityX();
     }
 
     private void capVelocityX() {
@@ -156,8 +153,11 @@ public class Player : MonoBehaviour {
 		}
 	}
 
-    private void flipSpriteIfGoingLeft() {
-        spriteFlipper.flipSprite(rigidBody.velocity.x < 0 || wallPushState == WallPushState.PUSHING_LEFT);
+    private void updateAnimator() {
+		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
+        animator.SetBool("Player_Grounded", grounded);
+        animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
+        animator.SetBool("Player_Pushing_Wall", (grounded && (wallPushState != WallPushState.NONE)));
     }
 
     /**
