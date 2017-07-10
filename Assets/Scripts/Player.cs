@@ -20,6 +20,8 @@ public class Player : MonoBehaviour {
 	private Animator animator;
     private Collider2D mainCollider;
 
+    private SpriteFlipper spriteFlipper;
+
     private DashState dashState;
     private WallPushState wallPushState;
     private float timeSinceDashStart;
@@ -41,6 +43,8 @@ public class Player : MonoBehaviour {
         environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
 
         mainCollider = gameObject.GetComponent<Collider2D>();
+
+        spriteFlipper = new SpriteFlipper(transform);
     }
 	
 	// Update is called once per frame
@@ -212,14 +216,7 @@ public class Player : MonoBehaviour {
 	}
 
     private void flipSpriteIfGoingLeft() {
-        int scaleX;
-        if (rigidBody.velocity.x < 0 || wallPushState == WallPushState.PUSHING_LEFT) {
-            scaleX = -1;
-        } else {
-            scaleX = 1;
-        }
-
-        transform.localScale = new Vector3(scaleX, transform.localScale.y, transform.localScale.z);
+        spriteFlipper.flipSprite(rigidBody.velocity.x < 0 || wallPushState == WallPushState.PUSHING_LEFT);
     }
 
     /**
