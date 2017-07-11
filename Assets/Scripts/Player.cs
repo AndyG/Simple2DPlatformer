@@ -185,6 +185,7 @@ public class Player : MonoBehaviour {
         animator.SetBool("Player_Grounded", grounded);
         animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
         animator.SetBool("Player_Pushing_Wall", (grounded && (wallPushState != WallPushState.NONE)));
+        animator.SetBool("Player_Clinging_Wall", (!grounded && (wallPushState != WallPushState.NONE)));
     }
 
     /**
