@@ -28,7 +28,7 @@ public class Player : MonoBehaviour {
     private float timeSinceDashStart;
 
     private int airdashesSinceAirborne = 0;
-	private float timeSinceGrounded = 0f;
+	private float timeSinceCouldJump = 0f;
 
     private bool grounded = true;
 
@@ -54,16 +54,12 @@ public class Player : MonoBehaviour {
         grounded = groundChecker.isGrounded();
         wallPushState = wallPushChecker.getWallPushState();
 
-		if (grounded) {
-			timeSinceGrounded = 0f;
-            airdashesSinceAirborne = 0;
-		} else {
-			timeSinceGrounded += Time.deltaTime;
-		}
+        processClinging();
+
+        updateGravity();
 
         switch (dashState) {
 			case DashState.READY:
-                rigidBody.gravityScale = intrinsicGravity;
 				if (!performDash()) {
                     performHorizMove();
 				}
@@ -92,7 +88,6 @@ public class Player : MonoBehaviour {
         bool isDashKeyDown = Input.GetKeyDown(KeyCode.RightShift);
         if (isDashKeyDown) {
             dashState = DashState.DASHING;
-            rigidBody.gravityScale = 0f;
 
             int directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
             setVelocity(dashSpeed * directionMultiplier, 0);
@@ -134,12 +129,26 @@ public class Player : MonoBehaviour {
         }
     }
 
+    private bool getCanJumpAndUpdateTimer()
+    {
+        bool clinging = wallPushState != WallPushState.NONE;
+		if (grounded || clinging) {
+			timeSinceCouldJump = 0f;
+            airdashesSinceAirborne = 0;
+		} else {
+			timeSinceCouldJump += Time.deltaTime;
+		}
+
+        return grounded || clinging || timeSinceCouldJump < jumpLeniency;
+    }
+
     private void processJump() {
-		bool canJump = grounded || (timeSinceGrounded < jumpLeniency);
+        bool canJump = getCanJumpAndUpdateTimer();
 
 		if (Input.GetKeyDown("space") && canJump)
         {
             Vector3 up = transform.TransformDirection(Vector3.up);
+            setVelocityY(0);
             rigidBody.AddForce(up * jumpPower, ForceMode2D.Impulse);
             dashState = DashState.READY;
         }
@@ -152,6 +161,24 @@ public class Player : MonoBehaviour {
             setVelocityY(minJumpMomentum);
 		}
 	}
+
+    private void processClinging() {
+        if (isClinging()) {
+            setVelocityY(0);
+        }
+    }
+
+    private void updateGravity() {
+        if (dashState == DashState.DASHING || isClinging()) {
+            rigidBody.gravityScale = 0f;
+        } else {
+            rigidBody.gravityScale = intrinsicGravity;
+        }
+    }
+
+    private bool isClinging() {
+        return !grounded && wallPushState != WallPushState.NONE;
+    }
 
     private void updateAnimator() {
 		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
