@@ -6,6 +6,7 @@ public class Track : MonoBehaviour
 {
 
     public GameObject target;
+    public GameObject target2;
     public float distance = 15;
     public float lerpFactor = 0.1f;
 
@@ -34,6 +35,18 @@ public class Track : MonoBehaviour
 
     private Vector3 computeTargetPosition()
     {
-        return target.transform.position + (Vector3.back * distance);
+        if (target2 == null)
+        {
+            return target.transform.position + (Vector3.back * distance);
+        }
+        else
+        {
+            Vector2 pos1 = target.transform.position;
+            Vector2 pos2 = target2.transform.position;
+
+            Vector2 average = (pos1 + pos2) / 2;
+
+            return new Vector3(average.x, average.y, -distance);
+        }
     }
 }

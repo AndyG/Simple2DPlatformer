@@ -2,22 +2,23 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Player : MonoBehaviour {
+public class Player : MonoBehaviour
+{
 
-	public float acceleration = 10f;
-	public bool infiniteAcceleration = true;
-	public float topSpeedX = 50f;
+    public float acceleration = 10f;
+    public bool infiniteAcceleration = true;
+    public float topSpeedX = 50f;
     public float dashSpeed = 150f;
-	public float maxDashTime = 30f;
+    public float maxDashTime = 30f;
     public float jumpPower = 10f;
-	public float minJumpMomentum = 4f;
+    public float minJumpMomentum = 4f;
     public float postDashVelocityY = -5f;
     public int maxAirdashesPerAirborne = 1;
-	public float jumpLeniency = 60f;
+    public float jumpLeniency = 60f;
     public float groundDetectionDistance = 5f;
 
-	private Rigidbody2D rigidBody;
-	private Animator animator;
+    private Rigidbody2D rigidBody;
+    private Animator animator;
 
     private SpriteFlipper spriteFlipper;
     private GroundChecker groundChecker;
@@ -28,21 +29,23 @@ public class Player : MonoBehaviour {
     private float timeSinceDashStart;
 
     private int airdashesSinceAirborne = 0;
-	private float timeSinceCouldJump = 0f;
+    private float timeSinceCouldJump = 0f;
 
     private bool grounded = true;
 
     private float intrinsicGravity;
     private int environmentLayerMask;
 
-	void Start () {
-		rigidBody = gameObject.GetComponent<Rigidbody2D> ();
+    void Start()
+    {
+        rigidBody = gameObject.GetComponent<Rigidbody2D>();
         intrinsicGravity = rigidBody.gravityScale;
 
-		animator = gameObject.GetComponent<Animator> ();
+        animator = gameObject.GetComponent<Animator>();
         environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
 
-        spriteFlipper = new SpriteFlipper(delegate() {
+        spriteFlipper = new SpriteFlipper(delegate ()
+        {
             return rigidBody.velocity.x < 0 || wallPushState == WallPushState.PUSHING_LEFT;
         });
 
@@ -50,7 +53,8 @@ public class Player : MonoBehaviour {
         wallPushChecker = new WallPushCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
     }
 
-	void Update () {
+    void Update()
+    {
         grounded = groundChecker.isGrounded();
         wallPushState = wallPushChecker.getWallPushState();
 
@@ -58,42 +62,49 @@ public class Player : MonoBehaviour {
 
         updateGravity();
 
-        switch (dashState) {
-			case DashState.READY:
-				if (!performDash()) {
+        switch (dashState)
+        {
+            case DashState.READY:
+                if (!performDash())
+                {
                     performHorizMove();
-				}
-				break;
+                }
+                break;
             case DashState.DASHING:
                 timeSinceDashStart += Time.deltaTime * 60;
-                if (timeSinceDashStart > maxDashTime) {
+                if (timeSinceDashStart > maxDashTime)
+                {
                     dashState = DashState.READY;
                     setVelocity(0, postDashVelocityY);
                     performHorizMove();
                 }
                 break;
-		}
+        }
 
         processJump();
         updateAnimator();
         spriteFlipper.tryFlipSprite(transform);
-	}
+    }
 
     // Returns true if a dash was performed.
-    private bool performDash() {
-        if (!grounded && airdashesSinceAirborne >= maxAirdashesPerAirborne) {
+    private bool performDash()
+    {
+        if (!grounded && airdashesSinceAirborne >= maxAirdashesPerAirborne)
+        {
             return false;
         }
 
-        bool isDashKeyDown = Input.GetKeyDown(KeyCode.RightShift);
-        if (isDashKeyDown) {
+        bool isDashKeyDown = Input.GetKeyDown(KeyCode.RightShift) || Input.GetKeyDown(KeyCode.LeftShift);
+        if (isDashKeyDown)
+        {
             dashState = DashState.DASHING;
 
             int directionMultiplier = Input.GetAxis("Horizontal") >= 0 ? 1 : -1;
             setVelocity(dashSpeed * directionMultiplier, 0);
             timeSinceDashStart = 0;
 
-            if (!grounded) {
+            if (!grounded)
+            {
                 airdashesSinceAirborne++;
             }
 
@@ -101,26 +112,30 @@ public class Player : MonoBehaviour {
         }
 
         return false;
-	}
-	
-	private void performHorizMove() {
-        if (wallPushState != WallPushState.NONE) {
+    }
+
+    private void performHorizMove()
+    {
+        if (wallPushState != WallPushState.NONE)
+        {
             return;
         }
 
-		float horizInput = Input.GetAxis ("Horizontal");
+        float horizInput = Input.GetAxis("Horizontal");
 
-        if (horizInput == 0) {
+        if (horizInput == 0)
+        {
             setVelocityX(0);
             return;
         }
 
         float force = (horizInput) * (infiniteAcceleration ? float.MaxValue : acceleration);
-        rigidBody.AddForce (Vector2.right * force, ForceMode2D.Impulse);
+        rigidBody.AddForce(Vector2.right * force, ForceMode2D.Impulse);
         capVelocityX();
     }
 
-    private void capVelocityX() {
+    private void capVelocityX()
+    {
         float currentHorizVelocity = rigidBody.velocity.x;
         if (Mathf.Abs(currentHorizVelocity) > topSpeedX)
         {
@@ -132,20 +147,24 @@ public class Player : MonoBehaviour {
     private bool getCanJumpAndUpdateTimer()
     {
         bool clinging = wallPushState != WallPushState.NONE;
-		if (grounded || clinging) {
-			timeSinceCouldJump = 0f;
+        if (grounded || clinging)
+        {
+            timeSinceCouldJump = 0f;
             airdashesSinceAirborne = 0;
-		} else {
-			timeSinceCouldJump += Time.deltaTime;
-		}
+        }
+        else
+        {
+            timeSinceCouldJump += Time.deltaTime;
+        }
 
         return grounded || clinging || timeSinceCouldJump < jumpLeniency;
     }
 
-    private void processJump() {
+    private void processJump()
+    {
         bool canJump = getCanJumpAndUpdateTimer();
 
-		if (Input.GetKeyDown("space") && canJump)
+        if (Input.GetKeyDown("space") && canJump)
         {
             Vector3 up = transform.TransformDirection(Vector3.up);
             setVelocityY(0);
@@ -156,32 +175,42 @@ public class Player : MonoBehaviour {
         tryShortenJump();
     }
 
-	private void tryShortenJump() {
-		if (Input.GetKeyUp ("space") && rigidBody.velocity.y > minJumpMomentum) {
+    private void tryShortenJump()
+    {
+        if (Input.GetKeyUp("space") && rigidBody.velocity.y > minJumpMomentum)
+        {
             setVelocityY(minJumpMomentum);
-		}
-	}
+        }
+    }
 
-    private void processClinging() {
-        if (isClinging()) {
+    private void processClinging()
+    {
+        if (isClinging())
+        {
             setVelocityY(0);
         }
     }
 
-    private void updateGravity() {
-        if (dashState == DashState.DASHING || isClinging()) {
+    private void updateGravity()
+    {
+        if (dashState == DashState.DASHING || isClinging())
+        {
             rigidBody.gravityScale = 0f;
-        } else {
+        }
+        else
+        {
             rigidBody.gravityScale = intrinsicGravity;
         }
     }
 
-    private bool isClinging() {
+    private bool isClinging()
+    {
         return !grounded && wallPushState != WallPushState.NONE;
     }
 
-    private void updateAnimator() {
-		animator.SetFloat ("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
+    private void updateAnimator()
+    {
+        animator.SetFloat("Player_Velocity_Horiz", Mathf.Abs(rigidBody.velocity.x));
         animator.SetBool("Player_Grounded", grounded);
         animator.SetBool("Player_Dashing", (dashState == DashState.DASHING));
         animator.SetBool("Player_Pushing_Wall", (grounded && (wallPushState != WallPushState.NONE)));
@@ -191,7 +220,8 @@ public class Player : MonoBehaviour {
     /**
      * Various helper methods for updating position or velocity. 
      */
-    private void setVelocityX(float x) {
+    private void setVelocityX(float x)
+    {
         setVelocity(x, rigidBody.velocity.y);
     }
 
@@ -205,7 +235,8 @@ public class Player : MonoBehaviour {
         rigidBody.velocity = new Vector2(x, y);
     }
 
-    private enum DashState {
+    private enum DashState
+    {
         READY,
         DASHING
     }
