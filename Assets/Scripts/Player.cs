@@ -16,6 +16,7 @@ public class Player : MonoBehaviour
     public int maxAirdashesPerAirborne = 1;
     public float jumpLeniency = 60f;
     public float groundDetectionDistance = 5f;
+    public GameObject projectile;
 
     private Rigidbody2D rigidBody;
     private Animator animator;
@@ -23,6 +24,7 @@ public class Player : MonoBehaviour
     private SpriteFlipper spriteFlipper;
     private GroundChecker groundChecker;
     private WallPushChecker wallPushChecker;
+    private ProjectileShooter projectileShooter;
 
     private DashState dashState;
     private WallPushState wallPushState;
@@ -34,7 +36,8 @@ public class Player : MonoBehaviour
     private bool grounded = true;
 
     private float intrinsicGravity;
-    private int environmentLayerMask;
+
+    public GameObject rotatingCenter;
 
     void Start()
     {
@@ -42,7 +45,7 @@ public class Player : MonoBehaviour
         intrinsicGravity = rigidBody.gravityScale;
 
         animator = gameObject.GetComponent<Animator>();
-        environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
+        int environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
 
         spriteFlipper = new SpriteFlipper(delegate ()
         {
@@ -51,6 +54,7 @@ public class Player : MonoBehaviour
 
         groundChecker = new GroundCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
         wallPushChecker = new WallPushCheckerRays(gameObject.GetComponent<Collider2D>(), transform, environmentLayerMask);
+        projectileShooter = gameObject.GetComponentInChildren<ProjectileShooter>();
     }
 
     void Update()
@@ -82,8 +86,21 @@ public class Player : MonoBehaviour
         }
 
         processJump();
+        processProjectileInput();
         updateAnimator();
         spriteFlipper.tryFlipSprite(transform);
+        processVelocityX();
+    }
+     
+    private void processVelocityX() {
+        if (rigidBody.velocity.x >= 0) {
+            rotatingCenter.transform.rotation = Quaternion.identity;
+        } else {
+            Debug.Log("flipping");
+            //rotatingCenter.transform.rotation = Quaternion.Euler(0, 180, 0);
+            rotatingCenter.transform.eulerAngles = new Vector3(0, 180, 0);
+            //rotatingCenter.transform.Rotate(new Vector3(0, 180));
+        }
     }
 
     // Returns true if a dash was performed.
@@ -180,6 +197,12 @@ public class Player : MonoBehaviour
         if (Input.GetKeyUp("space") && rigidBody.velocity.y > minJumpMomentum)
         {
             setVelocityY(minJumpMomentum);
+        }
+    }
+
+    private void processProjectileInput() {
+        if (Input.GetKeyDown("f")) {
+            projectileShooter.shootProjectile();
         }
     }
 
