@@ -5,6 +5,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
 
+    public bool flipped = false;
     public float acceleration = 10f;
     public bool infiniteAcceleration = true;
     public float topSpeedX = 50f;
@@ -91,15 +92,16 @@ public class Player : MonoBehaviour
         spriteFlipper.tryFlipSprite(transform);
         processVelocityX();
     }
-     
-    private void processVelocityX() {
-        if (rigidBody.velocity.x >= 0) {
+
+    private void processVelocityX()
+    {
+        if (rigidBody.velocity.x >= 0)
+        {
             rotatingCenter.transform.rotation = Quaternion.identity;
-        } else {
-            Debug.Log("flipping");
-            //rotatingCenter.transform.rotation = Quaternion.Euler(0, 180, 0);
-            rotatingCenter.transform.eulerAngles = new Vector3(0, 180, 0);
-            //rotatingCenter.transform.Rotate(new Vector3(0, 180));
+        }
+        else
+        {
+            rotatingCenter.transform.rotation = Quaternion.Euler(0, 180, 0);
         }
     }
 
@@ -200,9 +202,11 @@ public class Player : MonoBehaviour
         }
     }
 
-    private void processProjectileInput() {
-        if (Input.GetKeyDown("f")) {
-            projectileShooter.shootProjectile();
+    private void processProjectileInput()
+    {
+        if (Input.GetKeyDown("f"))
+        {
+            projectileShooter.shootProjectile(rigidBody.velocity);
         }
     }
 
