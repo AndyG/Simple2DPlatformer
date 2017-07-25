@@ -17,7 +17,11 @@ public class Player : MonoBehaviour
     public int maxAirdashesPerAirborne = 1;
     public float jumpLeniency = 60f;
     public float groundDetectionDistance = 5f;
+
     public GameObject projectile;
+    public GameObject jetpack;
+
+    private Useable currentPowerup;
 
     private Rigidbody2D rigidBody;
     private Animator animator;
@@ -93,6 +97,7 @@ public class Player : MonoBehaviour
         updateAnimator();
         spriteFlipper.tryFlipSprite(transform);
         projectileShooter.setIsFlipped(rigidBody.velocity.x < 0);
+        usePowerup();
     }
 
     // Returns true if a dash was performed.
@@ -252,6 +257,47 @@ public class Player : MonoBehaviour
     private void setVelocity(float x, float y)
     {
         rigidBody.velocity = new Vector2(x, y);
+    }
+
+    private void usePowerup()
+    {
+        if (currentPowerup != null)
+        {
+            if (Input.GetKey(KeyCode.P))
+            {
+                currentPowerup.use(this);
+            }
+        }
+    }
+
+    public void pushUpwards(float force)
+    {
+        Vector3 up = transform.TransformDirection(Vector3.up);
+        rigidBody.AddForce(up * force, ForceMode2D.Impulse);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Powerup"))
+        {
+            Powerup powerup = collision.gameObject.GetComponent<Powerup>();
+            processPowerup(powerup.powerupType);
+            powerup.onCollected();
+        }
+    }
+
+    private void processPowerup(Powerup.PowerupType powerupType) {
+        switch(powerupType)
+        {
+            case Powerup.PowerupType.JETPACK:
+                break;
+        }
+
+        GameObject instantiated = Instantiate(jetpack);
+        instantiated.transform.parent = transform;
+        instantiated.transform.position = transform.position;
+        instantiated.transform.position += (Vector3.back * 0.1f);
+        currentPowerup = instantiated.GetComponent<Useable>();
     }
 
     private enum DashState

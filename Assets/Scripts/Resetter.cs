@@ -16,7 +16,7 @@ public class Resetter : MonoBehaviour
     void Update()
     {
 
-        if (Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             Debug.Log("Resetting");
             SceneManager.LoadScene("ControlsPlayground");
