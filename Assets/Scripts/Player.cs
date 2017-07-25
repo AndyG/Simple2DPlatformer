@@ -37,6 +37,7 @@ public class Player : MonoBehaviour
     private bool grounded = true;
 
     private float intrinsicGravity;
+    private float intrinsicDrag;
 
     public GameObject rotatingCenter;
 
@@ -44,6 +45,7 @@ public class Player : MonoBehaviour
     {
         rigidBody = gameObject.GetComponent<Rigidbody2D>();
         intrinsicGravity = rigidBody.gravityScale;
+        intrinsicDrag = rigidBody.drag;
 
         animator = gameObject.GetComponent<Animator>();
         int environmentLayerMask = 1 << LayerMask.NameToLayer("Environment");
@@ -90,19 +92,7 @@ public class Player : MonoBehaviour
         processProjectileInput();
         updateAnimator();
         spriteFlipper.tryFlipSprite(transform);
-        processVelocityX();
-    }
-
-    private void processVelocityX()
-    {
-        if (rigidBody.velocity.x >= 0)
-        {
-            rotatingCenter.transform.rotation = Quaternion.identity;
-        }
-        else
-        {
-            rotatingCenter.transform.rotation = Quaternion.Euler(0, 180, 0);
-        }
+        projectileShooter.setIsFlipped(rigidBody.velocity.x < 0);
     }
 
     // Returns true if a dash was performed.
@@ -204,7 +194,7 @@ public class Player : MonoBehaviour
 
     private void processProjectileInput()
     {
-        if (Input.GetKeyDown("f"))
+        if (Input.GetKey("f"))
         {
             projectileShooter.shootProjectile(rigidBody.velocity);
         }
@@ -222,11 +212,13 @@ public class Player : MonoBehaviour
     {
         if (dashState == DashState.DASHING || isClinging())
         {
-            rigidBody.gravityScale = 0f;
+            rigidBody.drag = 0f;
+            float curVelocityY = rigidBody.velocity.y;
+            rigidBody.velocity = new Vector2(rigidBody.velocity.x, Mathf.Max(curVelocityY, 0f));
         }
         else
         {
-            rigidBody.gravityScale = intrinsicGravity;
+            rigidBody.drag = intrinsicDrag;
         }
     }
 

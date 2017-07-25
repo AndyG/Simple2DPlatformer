@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class OscillateY : MonoBehaviour {
+public class OscillateY : MonoBehaviour
+{
 
     public float delta = 1.5f;
     public float speed = 2.0f;
@@ -26,7 +27,8 @@ public class OscillateY : MonoBehaviour {
         if (oscillateAxis == OscillateAxis.Y)
         {
             dest.y += step;
-        } else if (oscillateAxis == OscillateAxis.X)
+        }
+        else if (oscillateAxis == OscillateAxis.X)
         {
             dest.x += step;
         }

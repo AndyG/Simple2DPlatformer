@@ -23,7 +23,6 @@ public class SpriteTracker : MonoBehaviour
     public void handleSpriteCollected()
     {
         numSprites--;
-        Debug.Log("num sprites: " + numSprites);
         if (numSprites <= 0)
         {
             AppState.lastTime = timePassed;
