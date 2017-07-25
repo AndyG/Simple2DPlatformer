@@ -8,7 +8,7 @@ public class GroundCheckerRays : GroundChecker {
     private Transform target;
     private int layerMask;
 
-    private float groundDistance = 0.1f;
+    private float groundDistance = 0.01f;
 
     public GroundCheckerRays(Collider2D boundsProvider, Transform target, int layerMask)
     {

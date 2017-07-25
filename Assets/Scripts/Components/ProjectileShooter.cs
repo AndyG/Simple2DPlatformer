@@ -10,6 +10,11 @@ public class ProjectileShooter : MonoBehaviour
     public float velocityY;
     public float velocityAngular;
 
+    public float rateOfFirePerSec = 1;
+
+    private float timeSinceLastProjectile;
+    private float minTimeBetweenProjectiles;
+
     private AudioSource audioSource;
 
     private bool isFlipped = false;
@@ -17,6 +22,13 @@ public class ProjectileShooter : MonoBehaviour
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
+        timeSinceLastProjectile = rateOfFirePerSec;
+        minTimeBetweenProjectiles = 1f / rateOfFirePerSec;
+    }
+
+    void Update()
+    {
+        timeSinceLastProjectile += Time.deltaTime;
     }
 
     public void shootProjectile()
@@ -31,6 +43,13 @@ public class ProjectileShooter : MonoBehaviour
 
     public void shootProjectile(float additionalVelocityX, float additionalVelocityY)
     {
+        if (timeSinceLastProjectile < minTimeBetweenProjectiles)
+        {
+            return;
+        }
+
+        timeSinceLastProjectile = 0f;
+
         playSound();
         GameObject instantiatedProjectile = Instantiate(projectile, transform.position, Quaternion.identity);
         Rigidbody2D rigidBody = instantiatedProjectile.GetComponent<Rigidbody2D>();
